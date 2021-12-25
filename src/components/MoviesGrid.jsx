@@ -1,41 +1,45 @@
 import { useEffect, useState } from "react";
-import { MovieCard } from "./MovieCard";
 import { get } from "../utils/httpClient";
-//import movies from "./movies.json"; cambiado por lo de api fetch
+import { MovieCard } from "./MovieCard";
 import styles from "./MoviesGrid.module.css";
+import { Spinner } from "./Spinner";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { Empty } from "./Empty";
 
-export function MoviesGrid() {
+export function MoviesGrid({ search }) {
     const [movies, setMovies] = useState([]);
-
-    /*   useEffect(
-        () =>
-            fetch("https://api.themoviedb.org/3/discover/movie", {
-                headers: {
-                    Authorization:
-                        "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1NzUzN2ZmMTlmMzgxZGQ3YjY3ZWVlMWVhOGI4MTY0YSIsInN1YiI6IjVlM2ExNmU1MGMyNzEwMDAxODc1NTI4MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nOpZ_nBtA93tbzr6-rxD0760tssAAaSppyjRv9anArs",
-                    "Content-Type": "application/json;charset=utf-8",
-                },
-            })
-                .then((result) => result.json())
-                .then((data) => {
-                    setMovies(data.results);
-                }, [])
-        // [] arreglo de dependencias para no ciclo infinito
-    ); */
+    const [isLoading, setIsLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
-        get("/discover/movie").then((data) => {
-            setMovies(data.results);
+        setIsLoading(true);
+        const searchUrl = search
+            ? "/search/movie?query=" + search + "&page=" + page
+            : "/discover/movie?page=" + page;
+        get(searchUrl).then((data) => {
+            setMovies((prevMovies) => prevMovies.concat(data.results));
+            setHasMore(data.page < data.total_pages);
+            setIsLoading(false);
         });
-    }, []);
+    }, [search, page]);
 
-    //axios llamadas asincronas es más simple
+    if (!isLoading && movies.length === 0) {
+        return <Empty />;
+    }
 
     return (
-        <ul className={styles.moviesGrid}>
-            {movies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-            ))}
-        </ul>
+        <InfiniteScroll
+            dataLength={movies.length}
+            hasMore={hasMore}
+            next={() => setPage((prevPage) => prevPage + 1)}
+            loader={<Spinner />}
+        >
+            <ul className={styles.moviesGrid}>
+                {movies.map((movie) => (
+                    <MovieCard key={movie.id} movie={movie} />
+                ))}
+            </ul>
+        </InfiniteScroll>
     );
 }
