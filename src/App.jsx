@@ -13,7 +13,7 @@ export function App() {
                 <Link to="/">
                     <h1 className={styles.title}>
                         Movies con React
-                        <br /> No entiendo nada
+                        <br /> Está bueno 🧉
                     </h1>
                 </Link>
             </header>
